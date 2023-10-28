@@ -1,0 +1,8 @@
+id,checking_peer,checked_peer,points_amount
+1,Evan,Andy,2
+2,Carl,Bob,2
+3,Carl,Andy,4
+4,Dan,Andy,1
+5,Bob,Andy,3
+6,Dan,Bob,1
+7,Dan,Carl,1
