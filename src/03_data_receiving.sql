@@ -21,7 +21,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- SELECT * FROM fnc_get_transferred_points_summary() ORDER BY peer1_nickname
+-- SELECT * FROM fnc_get_transferred_points_summary() ORDER BY peer1_nickname;
 
 ----------------------------------2----------------------------------
 
@@ -42,7 +42,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- SELECT * FROM fnc_tasks_success()
+-- SELECT * FROM fnc_tasks_success();
 
 ----------------------------------3----------------------------------
 
@@ -50,15 +50,15 @@ CREATE OR REPLACE FUNCTION fnc_get_persistent_peers(in_date date)
 RETURNS TABLE (peer_nickname varchar) AS $$
 BEGIN
     RETURN QUERY
-    SELECT DISTINCT peer
-    FROM time_tracking
-    WHERE "date" = in_date
-    GROUP BY peer
-    HAVING MAX("state") = 1;
+		SELECT DISTINCT peer
+		  FROM time_tracking
+		 WHERE "date" = in_date
+		 GROUP BY peer
+		HAVING MAX("state") = 1;
 END;
 $$ LANGUAGE plpgsql;
 
---SELECT * FROM get_persistent_peers('2023-10-10')
+--SELECT * FROM get_persistent_peers('2023-10-10');
 
 /*
 SELECT * FROM time_tracking
@@ -83,14 +83,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---SELECT * FROM fnc_points_change()
+--SELECT * FROM fnc_points_change();
 
 ----------------------------------5----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_points_change_first_func(r REFCURSOR DEFAULT 'ref') 
-AS $$
+CREATE OR REPLACE FUNCTION fnc_points_change_first_func() 
+RETURNS TABLE (peer varchar, points_change bigint) AS $$
 BEGIN
-    OPEN r FOR
+    RETURN QUERY
     SELECT peer, SUM(points) AS points_change
 		FROM (SELECT peer1_nickname AS peer, points_amount AS points FROM fnc_get_transferred_points_summary()
 			  WHERE peer1_nickname != peer2_nickname AND points_amount >= 0
@@ -102,15 +102,14 @@ ORDER BY points_change DESC;
 END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_points_change_first_func();
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_points_change_first_func();
 
 ----------------------------------6----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_most_task(r REFCURSOR DEFAULT 'ref') 
-AS $$
+CREATE OR REPLACE FUNCTION fnc_most_task() 
+RETURNS TABLE ("date" date, task varchar, amount bigint) AS $$
 BEGIN
-    OPEN r FOR
+    RETURN QUERY
         WITH checks_count AS (SELECT date, task, COUNT(task) AS amount
 							  FROM checks
 							  GROUP BY date, task),
@@ -119,19 +118,17 @@ BEGIN
         SELECT date, task, amount
 		FROM max_count
 		ORDER BY date;
-
 END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_most_task();
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_most_task();
 
 ----------------------------------7----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_finished_block(block varchar, r REFCURSOR DEFAULT 'ref') 
-AS $$
+CREATE OR REPLACE FUNCTION fnc_finished_block(block varchar) 
+RETURNS TABLE (peer varchar, day date) AS $$
 BEGIN
-    OPEN r FOR
+    RETURN QUERY
 		WITH block_name AS (
 			SELECT title AS task
 			FROM tasks
@@ -149,8 +146,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;		
 		
---CALL proc_finished_block('C');
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_finished_block(block varchar);
 
 ----------------------------------8----------------------------------
 

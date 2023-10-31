@@ -1,23 +1,11 @@
 ----------------------------------1----------------------------------
 -- СОЗДАНИЕ БАЗЫ ДАННЫХ --
 
-/*
-	peers:
-		- ник
-		- дата рождения
-*/
 CREATE TABLE IF NOT EXISTS peers (
  	nickname varchar NOT NULL PRIMARY KEY,
 	birthday date NOT NULL
 );
 
-
-/*
-	tasks:
-		- название проекта
-		- название проекта, который необходимо выполнить, чтобы начать данный
-		- максимальное количество ХП
-*/
 CREATE TABLE IF NOT EXISTS tasks (
  	title varchar NOT NULL PRIMARY KEY,
 	parent_task varchar DEFAULT NULL,
@@ -25,14 +13,6 @@ CREATE TABLE IF NOT EXISTS tasks (
 	FOREIGN KEY (parent_task) REFERENCES tasks (title)
 );
 
-
-/*
-	checks:
-		- ID
-		- ник пира
-		- название проекта
-		- дата проверки
-*/
 CREATE TABLE IF NOT EXISTS checks (
  	id bigserial PRIMARY KEY,
 	peer varchar NOT NULL,
@@ -46,14 +26,6 @@ CREATE TABLE IF NOT EXISTS checks (
 DROP TYPE IF EXISTS check_status;
 CREATE TYPE check_status AS enum ('Start', 'Success', 'Failure');
 
-/*
-	p2p:
-		- ID
-		- ID проверки
-		- ник проверяющего
-		- статус проверки
-		- время
-*/
 CREATE TABLE IF NOT EXISTS p2p (
  	id bigserial PRIMARY KEY,
 	check_id bigint NOT NULL,
@@ -64,13 +36,6 @@ CREATE TABLE IF NOT EXISTS p2p (
 	FOREIGN KEY (checking_peer) REFERENCES peers (nickname)
 );
 
-/*
-	verter:
-		- ID
-		- ID проверки
-		- статус автоматизированной проверки
-		- время
-*/
 CREATE TABLE IF NOT EXISTS verter (
  	id bigserial PRIMARY KEY,
 	check_id bigint NOT NULL,
@@ -79,13 +44,6 @@ CREATE TABLE IF NOT EXISTS verter (
 	FOREIGN KEY (check_id) REFERENCES checks (id)
 );
 
-/*
-	transferred_points:
-		- ID
-		- ник проверяющего
-		- ник проверяемого
-		- количество пир-поинтов, перешедших к проверяющему
-*/
 CREATE TABLE IF NOT EXISTS transferred_points (
  	id bigserial PRIMARY KEY,
 	checking_peer varchar NOT NULL,
@@ -95,13 +53,6 @@ CREATE TABLE IF NOT EXISTS transferred_points (
 	FOREIGN KEY (checked_peer) REFERENCES peers (nickname)
 );
 
-/*
-	friends:
-		- ID
-		- ник первого пира
-		- ник второго пира
-		(друзья считаются взаимными друзьями)
-*/
 CREATE TABLE IF NOT EXISTS friends (
  	id bigserial PRIMARY KEY,
 	peer_1 varchar NOT NULL,
@@ -110,12 +61,6 @@ CREATE TABLE IF NOT EXISTS friends (
 	FOREIGN KEY (peer_2) REFERENCES peers (nickname)
 );
 
-/*
-	recommendations:
-		- ID
-		- ник пира
-		- ник пира, к которому друзья рекомендуют дти на проверку
-*/
 CREATE TABLE IF NOT EXISTS recommendations (
  	id bigserial PRIMARY KEY,
 	peer varchar NOT NULL,
@@ -124,12 +69,6 @@ CREATE TABLE IF NOT EXISTS recommendations (
 	FOREIGN KEY (recommended_peer) REFERENCES peers (nickname)
 );
 
-/*
-	xp:
-		- ID
-		- ID проверки
-		- количество полученного ХП
-*/
 CREATE TABLE IF NOT EXISTS xp (
  	id bigserial PRIMARY KEY,
 	check_id bigint NOT NULL,
@@ -137,14 +76,6 @@ CREATE TABLE IF NOT EXISTS xp (
 	FOREIGN KEY (check_id) REFERENCES checks (id)
 );
 
-/*
-	xp:
-		- ID
-		- ник пира
-		- дата
-		- время
-		- статус
-*/
 CREATE TABLE IF NOT EXISTS time_tracking (
  	id bigserial PRIMARY KEY,
 	peer varchar NOT NULL,
