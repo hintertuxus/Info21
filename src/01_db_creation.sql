@@ -120,12 +120,12 @@ DO $$
 
 DECLARE vPath VARCHAR;
 BEGIN
-vPath := '/Users/glenniss/projects/SQL2_Info21_v1.0-1/src';
+vPath := '/Users/glenniss/projects/Info21/src';
 
 CALL proc_import_from_csv('peers', vPath || '/peers.csv', ',');
+CALL proc_import_from_csv('tasks', vPath || '/tasks.csv', ',');
 CALL proc_import_from_csv('checks', vPath || '/checks.csv', ',');
 CALL proc_import_from_csv('p2p', vPath || '/p2p.csv', ',');
-CALL proc_import_from_csv('tasks', vPath || '/tasks.csv', ',');
 CALL proc_import_from_csv('verter', vPath || '/verter.csv', ',');
 CALL proc_import_from_csv('friends', vPath || '/friends.csv', ',');
 CALL proc_import_from_csv('recommendations', vPath || '/recommendations.csv', ',');
@@ -144,7 +144,7 @@ DO $$
 
 DECLARE vPath VARCHAR;
 BEGIN
-vPath := '/Users/glenniss/projects/SQL2_Info21_v1.0-1/src';
+vPath := '/Users/glenniss/projects/Info21/src';
 CALL proc_export_to_csv('checks', vPath || '/checks.csv', ',');
 CALL proc_export_to_csv('friends', vPath || '/friends.csv', ',');
 CALL proc_export_to_csv('p2p', vPath || '/p2p.csv', ',');

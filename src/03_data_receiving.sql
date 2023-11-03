@@ -58,15 +58,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---SELECT * FROM get_persistent_peers('2023-10-10');
-
 /*
-SELECT * FROM time_tracking
+SELECT * FROM time_tracking;
 INSERT INTO time_tracking
-VALUES ((SELECT COUNT(*) FROM time_tracking) + 1, 'C', '2023-10-10', '09:10:10', 1),
-		((SELECT COUNT(*) FROM time_tracking) + 2, 'C', '2023-10-11', '21:10:10', 2)
+VALUES ((SELECT COUNT(*) FROM time_tracking) + 1, 'Carl', '2023-10-10', '09:10:10', 1),
+		((SELECT COUNT(*) FROM time_tracking) + 2, 'Carl', '2023-10-11', '21:10:10', 2);
 		
 */
+
+--SELECT * FROM fnc_get_persistent_peers('2023-10-10');
 
 ----------------------------------4----------------------------------
 
@@ -91,13 +91,13 @@ CREATE OR REPLACE FUNCTION fnc_points_change_first_func()
 RETURNS TABLE (peer varchar, points_change bigint) AS $$
 BEGIN
     RETURN QUERY
-    SELECT peer, SUM(points) AS points_change
-		FROM (SELECT peer1_nickname AS peer, points_amount AS points FROM fnc_get_transferred_points_summary()
+    SELECT peer1 AS peer, SUM(points) AS points_change
+		FROM (SELECT peer1_nickname AS peer1, points_amount AS points FROM fnc_get_transferred_points_summary()
 			  WHERE peer1_nickname != peer2_nickname AND points_amount >= 0
 			  UNION ALL
 			  SELECT peer2_nickname AS peer, 0 - points_amount AS points FROM fnc_get_transferred_points_summary()
 			 WHERE peer1_nickname != peer2_nickname AND points_amount >= 0) as tmp
-	GROUP BY peer
+	GROUP BY peer1
 ORDER BY points_change DESC;
 END;
 $$ LANGUAGE plpgsql;
@@ -107,7 +107,7 @@ $$ LANGUAGE plpgsql;
 ----------------------------------6----------------------------------
 
 CREATE OR REPLACE FUNCTION fnc_most_task() 
-RETURNS TABLE ("date" date, task varchar, amount bigint) AS $$
+RETURNS TABLE ("Date" date, "Task" varchar, "Amount" bigint) AS $$
 BEGIN
     RETURN QUERY
         WITH checks_count AS (SELECT date, task, COUNT(task) AS amount
@@ -126,7 +126,7 @@ $$ LANGUAGE plpgsql;
 ----------------------------------7----------------------------------
 
 CREATE OR REPLACE FUNCTION fnc_finished_block(block varchar) 
-RETURNS TABLE (peer varchar, day date) AS $$
+RETURNS TABLE ("Peer" varchar, "Day" date) AS $$
 BEGIN
     RETURN QUERY
 		WITH block_name AS (
@@ -146,14 +146,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;		
 		
---SELECT * FROM fnc_finished_block(block varchar);
+--SELECT * FROM fnc_finished_block('C');
 
 ----------------------------------8----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_friend_check(r REFCURSOR DEFAULT 'ref') 
-AS $$
+CREATE OR REPLACE FUNCTION fnc_friend_check() 
+RETURNS TABLE ("Peer" varchar, "Recommended Peer" varchar) AS $$
 BEGIN
-    OPEN r FOR
+    RETURN QUERY
 		SELECT peer_1 AS peer, recommended_peer
 		FROM (SELECT peer_1, peer_2 FROM friends
 			  UNION
@@ -166,25 +166,24 @@ END;
 $$ LANGUAGE plpgsql;
 
 
---CALL proc_friend_check();
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_friend_check();
 
 ----------------------------------9----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_block_participation(block1 varchar, block2 varchar, r REFCURSOR DEFAULT 'ref') 
-AS $$
+CREATE OR REPLACE FUNCTION fnc_block_participation(block1 varchar, block2 varchar) 
+RETURNS TABLE ("Started block 1" numeric, "Started block 2" numeric, "Started both blocks" numeric,  "Didnt start any blocs" numeric) AS $$
 BEGIN
-    OPEN r FOR
+	RETURN QUERY
 	WITH peers_total AS (SELECT COUNT(peers.nickname) as num FROM peers),
      	b1 AS (SELECT peer, 1 AS bl1 FROM checks
                 WHERE substring(task FROM '.+?(?=\d{1,2})') = block1),
      	b2 AS  (SELECT peer, 1 AS bl2 FROM checks
                 WHERE substring(task FROM '.+?(?=\d{1,2})') = block2),
-     	peers_by_block AS (SELECT COALESCE(b1.peer, b2.peer) as peer_name, bl1, bl2, 
+     	peer_by_block AS (SELECT COALESCE(b1.peer, b2.peer) as peer_name, bl1, bl2, 
                        	COALESCE(b1.bl1, b2.bl2) as "both"
                        	FROM b1
 						FULL JOIN b2 ON b1.peer = b2.peer
-						GROUP BY peername, b1.bl1, b2.bl2)
+						GROUP BY peer_name, b1.bl1, b2.bl2)
 
 SELECT ROUND(CAST(COUNT(peer_by_block.bl1) AS NUMERIC)*100/peers_total.num, 0) AS started_block_1, 
 	ROUND(CAST(COUNT(peer_by_block.bl2) AS NUMERIC)*100/peers_total.num, 0) AS started_block_2, 
@@ -196,16 +195,14 @@ LIMIT 1;
 END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_block_participation('C', 'SQL');
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_block_participation('C', 'SQL');
 
 ----------------------------------10----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_peer_birthday_pass(r REFCURSOR DEFAULT 'ref') 
-AS $$
+CREATE OR REPLACE FUNCTION fnc_peer_birthday_pass() 
+RETURNS TABLE ("Successful checks" numeric, "Unsuccessful checks" numeric) AS $$
 BEGIN
-    OPEN r FOR
-        
+	RETURN QUERY
 		WITH peers_total AS (SELECT COUNT(peers.nickname) as num FROM peers),
 		bd AS (SELECT * FROM checks 
         			JOIN peers ON checks.peer = peers.nickname 
@@ -234,18 +231,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_peer_birthday_pass();
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_peer_birthday_pass();
 
 ----------------------------------11----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_completed_tasks(task1_title varchar,
+CREATE OR REPLACE FUNCTION fnc_completed_tasks(task1_title varchar,
 												 task2_title varchar,
-												 task3_title varchar,
-												 r REFCURSOR DEFAULT 'ref') 
-AS $$
+												 task3_title varchar) 
+RETURNS TABLE ("Peer" varchar) AS $$
    BEGIN
-   OPEN r FOR
+   RETURN QUERY
         WITH task1 AS (SELECT DISTINCT c.peer
 					   FROM checks c, xp
 					   WHERE c.id = xp.check_id
@@ -267,15 +262,14 @@ AS $$
 END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_completed_tasks('C2_SimpleBashUtils', 'C3_s21_string+', 'DO3_LinuxMonitoring v1.0');
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_completed_tasks('C2_SimpleBashUtils', 'C3_s21_string+', 'DO3_LinuxMonitoring v1.0');
 
 ----------------------------------12----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_count_parent_tasks(r REFCURSOR DEFAULT 'ref')
-AS $$
+CREATE OR REPLACE FUNCTION fnc_count_parent_tasks()
+RETURNS TABLE ("Title" varchar, "Prev count" integer) AS $$
 	BEGIN
-		OPEN r FOR
+		RETURN QUERY
 		WITH RECURSIVE ctl AS
 		(SELECT
 			(SELECT	title
@@ -293,15 +287,14 @@ AS $$
 	END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_count_parent_tasks();
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_count_parent_tasks();
 
 ----------------------------------13----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_lucky_days(N int, r REFCURSOR DEFAULT 'ref')
-AS $$
+CREATE OR REPLACE FUNCTION fnc_lucky_days(N int)
+RETURNS TABLE ("Day" date) AS $$
 BEGIN
-	OPEN r FOR
+	RETURN QUERY
 		WITH  total_checks AS (
 			SELECT c.id, c.date, p2p.time, p2p.state, xp.xp_amount
 			FROM checks c, p2p, xp
@@ -321,15 +314,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_lucky_days(2);
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_lucky_days(2);
 
 ----------------------------------14----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_max_xp(r REFCURSOR DEFAULT 'ref')
-AS $$
+CREATE OR REPLACE FUNCTION fnc_max_xp()
+RETURNS TABLE ("Peer" varchar, "XP" bigint) AS $$
 BEGIN
-	OPEN r FOR
+	RETURN QUERY
 		SELECT peer, SUM(xp_amount) AS XP
 		FROM xp
 		JOIN checks ON xp.check_id = checks.id
@@ -339,15 +331,14 @@ BEGIN
 	END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_max_xp();
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_max_xp();
 
 ----------------------------------15----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_peer_comming(t time, m int, r REFCURSOR DEFAULT 'ref')
-AS $$
+CREATE OR REPLACE FUNCTION fnc_peer_comming(t time, m int)
+RETURNS TABLE ("Peer" varchar) AS $$
 BEGIN
-	OPEN r FOR
+	RETURN QUERY
 		SELECT tt.peer
 		FROM time_tracking AS tt
 		WHERE tt.time < t
@@ -357,15 +348,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_peer_comming('09:00:00'::time, 1);
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_peer_comming('09:00:00'::time, 1);
 
 ----------------------------------16----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_count_out(n int, m int, r REFCURSOR DEFAULT 'ref')
-AS $$
+CREATE OR REPLACE FUNCTION fnc_count_out(n int, m int)
+RETURNS TABLE ("Peer" varchar) AS $$
 BEGIN
-	OPEN r FOR
+	RETURN QUERY
 	WITH l AS (
 		SELECT *
 		FROM (SELECT tt.peer AS peer, date, COUNT(state) AS o
@@ -380,20 +370,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---CALL proc_count_out(360, 2);
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_count_out(360, 2);
 
 ----------------------------------17----------------------------------
 
-CREATE OR REPLACE PROCEDURE proc_calculate_early_entry_percentage(r REFCURSOR DEFAULT 'ref')
-AS $$
+CREATE OR REPLACE FUNCTION fnc_calculate_early_entry_percentage()
+RETURNS TABLE ("Month" text, "TotalEntries" numeric) AS $$
 DECLARE
     month_data RECORD;
     early_entries INTEGER;
     total_entries INTEGER;
     percentage FLOAT;
 BEGIN
-    OPEN r FOR
+    RETURN QUERY
     WITH ctl AS (
 		SELECT
 			TO_CHAR(tt.date, 'YYYY-MM') AS "Month",
@@ -420,5 +409,4 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
---CALL proc_calculate_early_entry_percentage();
---FETCH ALL FROM "ref";
+--SELECT * FROM fnc_calculate_early_entry_percentage();

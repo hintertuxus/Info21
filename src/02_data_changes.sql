@@ -1,3 +1,4 @@
+
 ----------------------------------1----------------------------------
 -- ПРОЦЕДУРА ДОБАВЛЕНИЯ P2P ПРОВЕРКА --
 
@@ -46,13 +47,12 @@ CREATE OR REPLACE PROCEDURE proc_add_p2p_check(
 $$ LANGUAGE plpgsql;
 
 -- TESTING -- 
-
 /*
 -- starting p2p
-CALL proc_add_p2p_check('D', 'B', 'C5_s21_decimal', 'Start', '10:11:00');
+CALL proc_add_p2p_check('Dan', 'Bob', 'C5_s21_decimal', 'Start', '10:11:00');
 
 -- failing p2p
-CALL proc_add_p2p_check('D', 'B', 'C5_s21_decimal', 'Failure', '10:11:00');
+CALL proc_add_p2p_check('Dan', 'Bob', 'C5_s21_decimal', 'Failure', '10:11:00');
 
 
 DELETE FROM p2p WHERE id = (SELECT MAX(id) FROM p2p);
@@ -120,8 +120,8 @@ $$ LANGUAGE plpgsql;
 --FOR TESTING--
 
 --select * from verter
+--CALL proc_add_verter_check('Bob', 'C4_s21_math', 'Success', '21:45:00');
 --DELETE FROM verter WHERE id = (SELECT MAX(id) FROM verter);
----CALL proc_add_verter_check('B', 'C4_s21_math', 'Success', '21:45:00');
 
 
 ----------------------------------3----------------------------------
@@ -149,8 +149,8 @@ BEGIN
 		  FROM transferred_points
 		  WHERE checked_peer = (SELECT peer FROM checks WHERE id = new.check_id)
 		  AND checking_peer = new.checking_peer) = 0) THEN
-			  INSERT INTO transferred_points (checking_peer, checked_peer, points_amount)
-			  VALUES (new.checking_peer, 
+			  INSERT INTO transferred_points (id, checking_peer, checked_peer, points_amount)
+			  VALUES ((SELECT count(*) + 1 FROM transferred_points), new.checking_peer, 
 					  (SELECT peer FROM checks WHERE id = new.check_id),
 					  1);
 	END IF;
@@ -166,7 +166,7 @@ EXECUTE FUNCTION fnc_trg_update_transferred_poins();
 
 -- TESTS -- 
 /*
-CALL proc_add_p2p_check('D', 'B', 'C5_s21_decimal', 'Start', '10:11:00');
+CALL proc_add_p2p_check('Dan', 'Bob', 'C5_s21_decimal', 'Start', '10:11:00');
 
 select * FROM p2p;
 select * FROM checks;
@@ -212,7 +212,7 @@ EXECUTE FUNCTION fnc_trg_validate_xp_insert();
 select * from xp
 
 INSERT INTO xp (id, check_id, xp_amount)
-VALUES (12, 14, 300);
+VALUES (14, 14, 670);
 
 DELETE FROM xp WHERE id = (SELECT MAX(id) FROM xp)
 */
